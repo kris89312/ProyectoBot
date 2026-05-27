@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Estado {
+  PENDIENTE
+  ASIGNADO
+  RECIBIDO
+  EN_CAMINO
+  ENTREGADO
+  FALLIDO
+}
+
+enum TipoPaquete {
+  SOBRE
+  CAJA_PEQUENA
+  CAJA_GRANDE
+  OTRO
+}
+
+enum Origen {
+  BOT
+  DASHBOARD
+  PILOTO
+}
+
+model Guia {
+  id                     String      @id @default(cuid())
+  numero_guia            String      @unique
+  estado                 Estado      @default(PENDIENTE)
+  remitente_nombre       String
+  remitente_tel          String
+  recoleccion_direccion  String
+  recoleccion_zona       String
+  recoleccion_referencia String?
+  destinatario_nombre    String
+  destinatario_tel       String
+  entrega_direccion      String
+  entrega_zona           String
+  entrega_referencia     String?
+  peso_kg                Decimal
+  dimensiones            String?
+  tipo_paquete           TipoPaquete
+  valor_declarado        Decimal?
+  instrucciones          String?
+  whatsapp_session_id    String?
+  piloto_id              String?
+  piloto                 Piloto?     @relation(fields: [piloto_id], references: [id])
+  estado_logs            EstadoLog[]
+  created_at             DateTime    @default(now())
+  updated_at             DateTime    @updatedAt
+}
+
+model Piloto {
+  id           String   @id @default(cuid())
+  nombre       String
+  tel_whatsapp String   @unique
+  activo       Boolean  @default(true)
+  guias        Guia[]
+  created_at   DateTime @default(now())
+}
+
+model EstadoLog {
+  id              String   @id @default(cuid())
+  guia_id         String
+  guia            Guia     @relation(fields: [guia_id], references: [id])
+  estado_anterior Estado
+  estado_nuevo    Estado
+  origen          Origen
+  nota            String?
+  created_at      DateTime @default(now())
+}
+
+model BotSesion {
+  id              String   @id @default(cuid())
+  tel_whatsapp    String   @unique
+  paso_actual     String
+  datos_parciales Json     @default("{}")
+  guia_id         String?
+  expires_at      DateTime
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
